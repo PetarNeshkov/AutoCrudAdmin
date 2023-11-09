@@ -102,6 +102,7 @@ public class FormControlsHelper
         Type? autocompleteType)
         => this.GeneratePrimaryKeyFormControls(entity, autocompleteType)
             .Concat(GeneratePrimitiveFormControls(entity))
+            .Concat(GenerateForeignKeyControls(entity))
             .Concat(this.GenerateComplexFormControls(entity, entityAction, complexOptionFilters));
 
     /// <summary>
@@ -121,6 +122,19 @@ public class FormControlsHelper
             .Where(property => IsPrimitiveProperty(property, entityType)
                                && !IsComplexPrimaryKey(property, entityType))
             .OrderBy(p => p.MetadataToken)
+            .Select(property => new FormControlViewModel
+            {
+                Name = property.Name,
+                Type = property.PropertyType,
+                Value = ExpressionsBuilder.ForGetPropertyValue<TEntity>(property)(entity),
+            });
+    }
+
+    private static IEnumerable<FormControlViewModel> GenerateForeignKeyControls<TEntity>(TEntity entity)
+    {
+        var entityType = ReflectionHelper.GetEntityTypeUnproxied<TEntity>();
+
+        return entityType.GetForeignKeyPropertyInfos()
             .Select(property => new FormControlViewModel
             {
                 Name = property.Name,
